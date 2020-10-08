@@ -4,13 +4,13 @@
  * @returns {function} - function-getter which allow get value from object by set path
  */
 export function createGetter(path) {
+  if (typeof path !== 'string' || path === '') return
+  const properties = path.split('.')
   return obj => {
-    if (typeof path !== 'string' || path === '') return undefined
-    const properties = path.split('.')
     let tempProperty = {...obj}
-    while (properties.length) {
-      if (!tempProperty[properties[0]]) return undefined
-      tempProperty = tempProperty[properties.shift()]
+    for (let property of properties) {
+      if (!tempProperty[property]) return
+      tempProperty = tempProperty[property]
     }
     return tempProperty
   }
