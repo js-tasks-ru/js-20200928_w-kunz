@@ -1,3 +1,5 @@
+let lastNotification = null
+
 export default class NotificationMessage {
   element = null
 
@@ -7,6 +9,11 @@ export default class NotificationMessage {
     this.type = type
     this.render()
   }
+  removeLastNotification() {
+    if(lastNotification) {
+      lastNotification.destroy()
+    }
+   }
 
   render() {
     const element = document.createElement('div')
@@ -23,7 +30,9 @@ export default class NotificationMessage {
   }
 
   show(parentElement = document.querySelector('body')) {
+    this.removeLastNotification()
     parentElement.appendChild(this.element)
+    lastNotification = this
     setTimeout(() => {
       this.remove()
     }, this.duration)
