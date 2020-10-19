@@ -5,7 +5,6 @@ export default class SortableTable {
   constructor(header = [], {data = []} = {}) {
     this.header = header
     this.data = [...data]
-    console.log('constructors', this.data)
     this.render()
   }
 
