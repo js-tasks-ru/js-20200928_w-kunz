@@ -2,70 +2,63 @@ export default class SortableTable {
   element = null
   subElements = {}
 
-  constructor(header = [], {data = [], sortByDefault = 'title' } = {}) {
+  constructor(header = [], {data = [], sortByDefault = 'title'} = {}) {
     this.header = header
     this.data = [...data]
-    this.sortOptions = {
-      lastSortField: sortByDefault,
-      lastSortOrder: 'desc'
-    }
+    this.lastSortField = sortByDefault
     this.render()
     this.initEventListeners()
-    this.sort(this.sortOptions.lastSortField, this.sortOptions.lastSortOrder)
+    this.sort(this.lastSortField, 'asc')
+  }
+
+  getArrow(id) {
+    return this.lastSortField === id
+      ? `<span data-element="arrow" class="sortable-table__sort-arrow">
+            <span class="sort-arrow"></span>
+         </span>`
+      : ''
   }
 
   getHeader() {
     return `
-    <thead data-element="header" class="sortable-table__header">
-      <tr class="sortable-table__row">
-        ${this.header.map(item => {
-          let searchIcon = ''
-          if (this.sortOptions.lastSortField === item.id) {
-             searchIcon = this.sortOptions.lastSortOrder === 'asc' ?
-                 `<span class="sortable-table__sort-arrow">▲</span>`
-               : `<span class="sortable-table__sort-arrow">▼</span>`
-          }
-          return `
-            <th class="sortable-table__cell" data-id="${item.id}">
-              ${item.title} ${searchIcon}
-            </th>`}).join('')}
-      </tr>
-    </thead>`
+      <tr data-element="header" class="sortable-table__row">
+        ${this.header.map(item => (`
+          <th class="sortable-table__cell" data-id="${item.id}" data-order="asc">
+            ${item.title}${this.getArrow(item.id)}
+          </th>`))})
+        .join('')}
+      </tr>`
   }
 
   getRow(item) {
     return `
     <tr class="sortable-table__row">
       ${this.header.map(headerItem => {
-        if (headerItem.template)
-          return `
-            <td class="sortable-table__cell">
-              <img class="sortable-table-image" alt="Image" src="${item.images[0]?.url}">
-            </td>`
-        else
-          return `<td class="sortable-table__cell">${item[headerItem.id]}</td>`
-      }
-    ).join('')}
-    </tr>
-    `
+      return headerItem.id === 'images'
+        ? `<td class="sortable-table__cell">
+               <img class="sortable-table-image" alt="Image" src="${item.images[0]?.url}">
+             </td>`
+        : `<td class="sortable-table__cell">${item[headerItem.id]}</td>`
+    }).join('')}
+    </tr>`
   }
 
   getBody(data) {
     return `
-    <tbody data-element="body">
+    <tbody data-element="body" class="sortable-table__body">
       ${data.map(item => this.getRow(item)).join('')}
-    </tbody>
-    `
+    </tbody>`
   }
 
   render() {
     const element = document.createElement('div')
     element.innerHTML = `
       <table class="sortable-table">
-        ${this.getHeader()}
+        <thead class="sortable-table__header">
+          ${this.getHeader()}
+        </thead>
         ${this.getBody(this.data)}
-      </table>
-    `
+      </table>`
     this.element = element.firstElementChild
     this.subElements = this.getSubElements(this.element)
   }
@@ -79,35 +72,33 @@ export default class SortableTable {
   }
 
   initEventListeners() {
-    const header = this.subElements.header
-    header.addEventListener('click', (e) => {
-      if (e.target.tagName !== 'TH') return
-      if (this.sortOptions.lastSortField !== e.target.dataset.id) {
-        this.sortOptions.lastSortField = e.target.dataset.id
-        this.sortOptions.lastSortOrder = 'asc'
-      } else {
-        this.sortOptions.lastSortOrder = this.sortOptions.lastSortOrder === 'desc' ? 'asc' : 'desc'
+    this.subElements.header.addEventListener('pointerdown', (e) => {
+      const headerItem = e.target.closest('[data-order]')
+      if (this.header.find(item => item.id === headerItem.dataset.id).sortable === false) return
+
+      if (this.lastSortField !== headerItem.dataset.id) {
+        headerItem.append(this.subElements.arrow)
+        this.lastSortField = headerItem.dataset.id
       }
-        this.sort(this.sortOptions.lastSortField, this.sortOptions.lastSortOrder)
+      headerItem.dataset.order = headerItem.dataset.order === 'desc' ? 'asc' : 'desc'
+
+      this.sort(this.lastSortField, headerItem.dataset.order)
     })
   }
 
   sort(fieldValue, orderValue) {
     const headerItem = this.header.find(item => item.id === fieldValue)
-    if (headerItem.sortable === false) return
     const data = [...this.data]
-
     const sortOrder = orderValue === 'desc' ? -1 : 1
     if (headerItem.sortType === 'number') {
       data.sort((a, b) => sortOrder * (a[fieldValue] - b[fieldValue]))
     } else if (headerItem.sortType === 'string') {
       data.sort((a, b) => sortOrder * (a[fieldValue].localeCompare(b[fieldValue], ['ru', 'en'])))
     }
-    this.update(data)
+    this.updateBody(data)
   }
 
-  update(data) {
-    this.subElements.header.innerHTML = this.getHeader()
+  updateBody(data) {
     this.subElements.body.innerHTML = this.getBody(data)
   }
 

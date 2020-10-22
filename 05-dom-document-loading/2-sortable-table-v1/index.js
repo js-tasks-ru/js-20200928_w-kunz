@@ -85,8 +85,6 @@ export default class SortableTable {
 
   destroy() {
     this.element.remove()
-    this.element = null
-    this.subElements = {}
   }
 }
 
