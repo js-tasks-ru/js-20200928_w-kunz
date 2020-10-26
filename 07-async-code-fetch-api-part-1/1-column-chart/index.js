@@ -62,8 +62,11 @@ export default class ColumnChart {
     this.element.remove()
   }
 
-  async update(from, to) {
-    this.data = await fetchJson(this.url, {from, to})
+  async update(dateFrom, dateTo) {
+    const url = new URL(this.url)
+    url.searchParams.set('from', dateFrom)
+    url.searchParams.set('to', dateTo)
+    this.data = await fetchJson(url)
     this.subElements.body.innerHTML = this.getBody(Object.values(this.data))
     if (Object.values(this.data).length !== 0) {
       this.element.classList.remove('column-chart_loading')
