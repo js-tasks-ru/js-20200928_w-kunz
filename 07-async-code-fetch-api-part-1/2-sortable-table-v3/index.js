@@ -17,7 +17,6 @@ export default class SortableTable {
     this.lastSortField = sortByDefault
     this.lastSortOrder = 'asc'
     this.render()
-    this.initEventListeners()
   }
 
   resetDefaults = () => {
@@ -97,6 +96,7 @@ export default class SortableTable {
     this.element = element.firstElementChild
     this.subElements = this.getSubElements(this.element)
     this.updateBody(await this.fetchData())
+    this.initEventListeners()
   }
 
   getSubElements(element) {
@@ -114,9 +114,9 @@ export default class SortableTable {
       headerItem.append(this.subElements.arrow)
       this.lastSortField = headerItem.dataset.id
     }
-    this.lastSortOrder = headerItem.dataset.order
-    this.sortOnServer(headerItem.dataset.order)
     headerItem.dataset.order = headerItem.dataset.order === 'desc' ? 'asc' : 'desc'
+    this.lastSortOrder = headerItem.dataset.order
+    this.sortOnServer(this.lastSortField, this.lastSortOrder)
   }
 
   scrollHandler = async () => {
@@ -134,7 +134,6 @@ export default class SortableTable {
       this.isLoading = false
     }
   }
-
 
   initEventListeners() {
     this.subElements.header.addEventListener('pointerdown', this.sortEventHandler)
