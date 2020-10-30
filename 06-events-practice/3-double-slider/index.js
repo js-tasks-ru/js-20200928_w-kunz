@@ -29,7 +29,6 @@ export default class DoubleSlider {
     `
     this.element = wrapperElement.firstElementChild
     this.subElements = this.getSubElements(this.element)
-    console.log(this.subElements)
     this.initEventListener()
   }
 
@@ -72,7 +71,7 @@ export default class DoubleSlider {
       document.addEventListener('mouseup', onMouseUp)
     })
 
-    addEventListener('mousedown', (e) => {
+    rightThumb.addEventListener('mousedown', (e) => {
       const sliderRect = this.subElements.slider.getBoundingClientRect()
       const leftBorder = sliderRect.left
       const sliderWidth = this.subElements.slider.offsetWidth
