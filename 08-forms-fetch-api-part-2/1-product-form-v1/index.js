@@ -7,23 +7,54 @@ const BACKEND_URL = 'https://course-js.javascript.ru';
 export default class ProductForm {
   element = null
   subElements = {}
+  defaultProductData = {
+    title: '',
+    description: '',
+    status: 1,
+    price: '',
+    quantity: '',
+    discount: '',
+    images: [],
+  }
 
   constructor(productId = '') {
     this.productId = productId;
     this.categories = []
     this.productData = {}
-    this.images = []
   }
 
   async render() {
     const wrapperElement = document.createElement('div')
-    await this.fetchCategories()
-    if (this.productId) await this.fetchProductData()
+    await this.fetchData()
     wrapperElement.innerHTML = this.template
     this.element = wrapperElement.firstElementChild
     this.subElements = this.getSubElements(this.element)
     this.initEventListeners()
     return this.element
+  }
+
+  async fetchData() {
+    const categoriesPromise = this.fetchCategories()
+    const productDataPromise = (this.productId)
+      ? this.fetchProductData()
+      : [this.defaultProductData]
+
+    const [categoriesData, productData] = await Promise.all([categoriesPromise, productDataPromise])
+    this.categories = categoriesData
+    this.productData = productData[0]
+  }
+
+  fetchCategories = async () => {
+    const categoriesURL = new URL('/api/rest/categories', BACKEND_URL)
+    categoriesURL.searchParams.set('_sort', 'weight')
+    categoriesURL.searchParams.set('_refs', 'subcategory')
+    return fetchJson(categoriesURL)
+  }
+
+  fetchProductData = async () => {
+    const productURL = new URL('/api/rest/products', BACKEND_URL)
+    productURL.searchParams.set('id', this.productId)
+    return fetchJson(productURL)
   }
 
   initEventListeners() {
@@ -101,21 +132,6 @@ export default class ProductForm {
       accum[subElement.dataset.element] = subElement
       return accum
     }, {})
-  }
-
-  fetchProductData = async () => {
-    const productURL = new URL('/api/rest/products', BACKEND_URL)
-    productURL.searchParams.set('id', this.productId)
-    const response = await fetchJson(productURL)
-    this.productData = response[0]
-    console.log(this.productData)
-  }
-
-  fetchCategories = async () => {
-    const categoriesURL = new URL('/api/rest/categories', BACKEND_URL)
-    categoriesURL.searchParams.set('_sort', 'weight')
-    categoriesURL.searchParams.set('_refs', 'subcategory')
-    this.categories = await fetchJson(categoriesURL)
   }
 
   getSubCategories(categoriesData) {
