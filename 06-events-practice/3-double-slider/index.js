@@ -21,13 +21,14 @@ export default class DoubleSlider {
       <div class="range-slider">
         <span data-element="from">${this.formatValue(this.selected.from)}</span>
         <div data-element="slider" class="range-slider__inner">
+          <span data-element="progressBar" class="range-slider__progress"></span>
           <span data-element="leftThumb" class="range-slider__thumb-left"></span>
           <span data-element="rightThumb" class="range-slider__thumb-right"></span>
         </div>
         <span data-element="to">${this.formatValue(this.selected.to)}</span>
-      </span>
-    `
-    this.element = wrapperElement.firstElementChild
+      </span>`
+
+  this.element = wrapperElement.firstElementChild
     this.subElements = this.getSubElements(this.element)
     this.initEventListener()
   }
@@ -41,7 +42,7 @@ export default class DoubleSlider {
   }
 
   initEventListener() {
-    const {leftThumb, rightThumb} = this.subElements
+    const {leftThumb, rightThumb, progressBar} = this.subElements
 
     leftThumb.addEventListener('mousedown', (e) => {
       const sliderRect = this.subElements.slider.getBoundingClientRect()
@@ -57,7 +58,9 @@ export default class DoubleSlider {
         } else if (newLeft > rightThumbPosition) {
           newLeft = rightThumbPosition
         }
-        leftThumb.style.left = newLeft + 'px'
+        leftThumb.style.left = (newLeft/sliderWidth*100) + '%'
+        progressBar.style.left = (newLeft/sliderWidth*100) + '%'
+
         this.selected.from = Math.floor(this.min + newLeft / sliderWidth * (this.max - this.min))
         this.subElements.from.textContent = this.formatValue(this.selected.from)
       }
@@ -85,7 +88,8 @@ export default class DoubleSlider {
         } else if (newRight > sliderWidth) {
           newRight = sliderWidth
         }
-        rightThumb.style.left = newRight + 'px'
+        rightThumb.style.right = (1 - newRight/sliderWidth)*100 + '%'
+        progressBar.style.right = (1 - newRight/sliderWidth)*100 + '%'
         this.selected.to = Math.floor(this.min + newRight / sliderWidth * (this.max - this.min))
         this.subElements.to.textContent = this.formatValue(this.selected.to)
       }
