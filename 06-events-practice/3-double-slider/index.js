@@ -28,9 +28,19 @@ export default class DoubleSlider {
         <span data-element="to">${this.formatValue(this.selected.to)}</span>
       </span>`
 
-  this.element = wrapperElement.firstElementChild
+    this.element = wrapperElement.firstElementChild
     this.subElements = this.getSubElements(this.element)
+    this.setPreselectedRange()
     this.initEventListener()
+  }
+
+  setPreselectedRange() {
+    const leftOffsetPercent = ((this.selected.from - this.min) / (this.max - this.min)) * 100 + '%'
+    const rightOffsetPercent = ((this.max - this.selected.to) / (this.max - this.min)) * 100 + '%'
+    this.subElements.leftThumb.style.left = leftOffsetPercent
+    this.subElements.progressBar.style.left = leftOffsetPercent
+    this.subElements.progressBar.style.right = rightOffsetPercent
+    this.subElements.rightThumb.style.right = rightOffsetPercent
   }
 
   getSubElements(element) {
@@ -42,66 +52,54 @@ export default class DoubleSlider {
   }
 
   initEventListener() {
-    const {leftThumb, rightThumb, progressBar} = this.subElements
+    this.subElements.leftThumb.addEventListener('pointerdown', this.onMouseDown)
+    this.subElements.rightThumb.addEventListener('pointerdown', this.onMouseDown)
+  }
 
-    leftThumb.addEventListener('mousedown', (e) => {
-      const sliderRect = this.subElements.slider.getBoundingClientRect()
-      const leftBorder = sliderRect.left
-      const sliderWidth = this.subElements.slider.offsetWidth
-      const offset = e.clientX - leftThumb.getBoundingClientRect().left
+  onMouseDown = (e) => {
+    this.dragging = e.target
+    document.addEventListener('pointermove', this.onMouseMove)
+    document.addEventListener('pointerup', this.onMouseUp)
+  }
 
-      const onMouseMove = (e) => {
-        let newLeft = (e.clientX - leftBorder - offset)
-        const rightThumbPosition = rightThumb.getBoundingClientRect().left - leftBorder
-        if (newLeft < 0) {
-          newLeft = 0
-        } else if (newLeft > rightThumbPosition) {
-          newLeft = rightThumbPosition
-        }
-        leftThumb.style.left = (newLeft/sliderWidth*100) + '%'
-        progressBar.style.left = (newLeft/sliderWidth*100) + '%'
+  onMouseUp = () => {
+    this.dispatchSelectionEvent()
+    document.removeEventListener('pointermove', this.onMouseMove)
+    document.removeEventListener('pointerup', this.onMouseUp)
+  }
 
-        this.selected.from = Math.floor(this.min + newLeft / sliderWidth * (this.max - this.min))
-        this.subElements.from.textContent = this.formatValue(this.selected.from)
+  onMouseMove = (e) => {
+    e.preventDefault()
+    const {leftThumb, rightThumb, slider, progressBar} = this.subElements
+    const leftBorder = slider.getBoundingClientRect().left
+    const sliderWidth = slider.getBoundingClientRect().width
+
+    if (this.dragging === leftThumb) {
+      const rightThumbPosition = ((100 - parseFloat(rightThumb.style.right)) * sliderWidth) / 100
+      let newLeft = e.clientX - leftBorder
+      if (newLeft < 0) {
+        newLeft = 0
+      } else if (newLeft > rightThumbPosition) {
+        newLeft = rightThumbPosition
       }
+      leftThumb.style.left = (newLeft / sliderWidth * 100) + '%'
+      progressBar.style.left = (newLeft / sliderWidth * 100) + '%'
+      this.selected.from = Math.floor(this.min + (newLeft / sliderWidth) * (this.max - this.min))
+      this.subElements.from.textContent = this.formatValue(this.selected.from)
 
-      const onMouseUp = () => {
-        this.dispatchSelectionEvent()
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
+    } else if (this.dragging === rightThumb) {
+      const leftThumbPosition = (parseFloat(leftThumb.style.left) * sliderWidth) / 100
+      let newRight = e.clientX - leftBorder
+      if (newRight < leftThumbPosition) {
+        newRight = leftThumbPosition
+      } else if (newRight > sliderWidth) {
+        newRight = sliderWidth
       }
-      document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
-    })
-
-    rightThumb.addEventListener('mousedown', (e) => {
-      const sliderRect = this.subElements.slider.getBoundingClientRect()
-      const leftBorder = sliderRect.left
-      const sliderWidth = this.subElements.slider.offsetWidth
-      const offset = e.clientX - rightThumb.getBoundingClientRect().left
-
-      const onMouseMove = (e) => {
-        let newRight = (e.clientX - leftBorder - offset)
-        const leftThumbPosition = leftThumb.getBoundingClientRect().left - leftBorder
-        if (newRight < leftThumbPosition) {
-          newRight = leftThumbPosition
-        } else if (newRight > sliderWidth) {
-          newRight = sliderWidth
-        }
-        rightThumb.style.right = (1 - newRight/sliderWidth)*100 + '%'
-        progressBar.style.right = (1 - newRight/sliderWidth)*100 + '%'
-        this.selected.to = Math.floor(this.min + newRight / sliderWidth * (this.max - this.min))
-        this.subElements.to.textContent = this.formatValue(this.selected.to)
-      }
-
-      const onMouseUp = () => {
-        this.dispatchSelectionEvent()
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
-      }
-      document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
-    })
+      rightThumb.style.right = (1 - newRight / sliderWidth) * 100 + '%'
+      progressBar.style.right = (1 - newRight / sliderWidth) * 100 + '%'
+      this.selected.to = Math.floor(this.min + newRight / sliderWidth * (this.max - this.min))
+      this.subElements.to.textContent = this.formatValue(this.selected.to)
+    }
   }
 
   dispatchSelectionEvent = () => {
@@ -120,6 +118,8 @@ export default class DoubleSlider {
   }
 
   destroy() {
+    document.removeEventListener('pointermove', this.onMouseMove)
+    document.removeEventListener('pointerup', this.onMouseUp)
     this.element = null
     this.subElements = {}
   }
